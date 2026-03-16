@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EnvDiff — Compare .env Files Instantly</title>
+<meta name="description" content="Paste two .env files and instantly spot missing keys, changed values, and secrets. Free developer tool.">
+<meta name="keywords" content="env diff, .env compare, environment variables, diff tool, developer tool">
+<meta property="og:title" content="EnvDiff — Compare .env Files Instantly">
+<meta property="og:description" content="Paste two .env files and instantly spot missing keys, changed values, and secrets. Free developer tool.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://shiffasultan-collab.github.io/envdiff/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="EnvDiff — Compare .env Files Instantly">
+<meta name="twitter:description" content="Paste two .env files and instantly spot missing keys, changed values, and secrets. Free developer tool.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>≠</text></svg>">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f172a;
+  --bg-light: #1e293b;
+  --bg-lighter: #334155;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --green: #22c55e;
+  --green-bg: rgba(34, 197, 94, 0.12);
+  --yellow: #eab308;
+  --yellow-bg: rgba(234, 179, 8, 0.12);
+  --red: #ef4444;
+  --red-bg: rgba(239, 68, 68, 0.12);
+  --blue-bg: rgba(59, 130, 246, 0.12);
+  --border: #334155;
+  --radius: 8px;
+  --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.6;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  padding: 2.5rem 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.header h1 .icon {
+  font-size: 1.6rem;
+  opacity: 0.9;
+}
+
+.header h1 .accent {
+  color: var(--accent);
+}
+
+.header p {
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+  font-size: 0.95rem;
+}
+
+/* Main */
+main {
+  flex: 1;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+/* Editor grid */
+.editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.editor-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.editor-panel textarea {
+  width: 100%;
+  min-height: 220px;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  padding: 1rem;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  line-height: 1.7;
+}
+
+.editor-panel textarea:focus {
+  border-color: var(--accent);
+}
+
+.editor-panel textarea::placeholder {
+  color: var(--bg-lighter);
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.btn {
+  padding: 0.6rem 1.4rem;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover { background: var(--accent-hover); }
+
+.btn-secondary {
+  background: var(--bg-lighter);
+  color: var(--text);
+}
+
+.btn-secondary:hover { background: #475569; }
+
+.btn-pro {
+  background: var(--bg-light);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  cursor: not-allowed;
+  opacity: 0.65;
+  position: relative;
+}
+
+.pro-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: linear-gradient(135deg, #a855f7, #6366f1);
+  color: #fff;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  margin-left: 0.25rem;
+}
+
+/* Toggle */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.toggle-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-lighter);
+  border-radius: 20px;
+  transition: background 0.2s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 3px;
+  bottom: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: var(--accent);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(16px);
+}
+
+/* Results */
+.results { display: none; }
+
+.results.visible { display: block; }
+
+.results-summary {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.summary-chip {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.chip-red { background: var(--red-bg); color: var(--red); }
+.chip-yellow { background: var(--yellow-bg); color: var(--yellow); }
+.chip-green { background: var(--green-bg); color: var(--green); }
+.chip-blue { background: var(--blue-bg); color: var(--accent); }
+
+.result-section {
+  margin-bottom: 1.25rem;
+}
+
+.result-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.result-section-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.result-section-title .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-red { background: var(--red); }
+.dot-yellow { background: var(--yellow); }
+.dot-green { background: var(--green); }
+
+.copy-btn {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  background: var(--bg-lighter);
+  border: none;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.copy-btn:hover { background: #475569; color: var(--text); }
+
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  table-layout: fixed;
+}
+
+.result-table th {
+  text-align: left;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.result-table td {
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+  word-break: break-all;
+  vertical-align: top;
+}
+
+.result-table tr:last-child td { border-bottom: none; }
+
+.result-table .col-key { width: 40%; }
+.result-table .col-val { width: 60%; }
+.result-table .col-val-a { width: 30%; }
+.result-table .col-val-b { width: 30%; }
+
+.row-red { background: var(--red-bg); }
+.row-yellow { background: var(--yellow-bg); }
+.row-green { background: var(--green-bg); }
+
+.val-masked {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 2rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  background: var(--accent);
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+footer .brand {
+  font-weight: 600;
+  color: var(--text);
+}
+
+footer .suite-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  margin-top: 0.75rem;
+}
+
+footer .suite-links a {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.78rem;
+  transition: color 0.2s;
+}
+
+footer .suite-links a:hover { color: #60a5fa; text-decoration: underline; }
+
+/* Mobile */
+@media (max-width: 700px) {
+  .editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header h1 { font-size: 1.5rem; }
+
+  .result-table { font-size: 0.75rem; }
+
+  .result-table th,
+  .result-table td { padding: 0.35rem 0.5rem; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <h1><span class="icon">≠</span> Env<span class="accent">Diff</span></h1>
+  <p>Paste two .env files and instantly spot differences</p>
+</header>
+
+<main>
+  <div class="editor-grid">
+    <div class="editor-panel">
+      <label class="editor-label" for="envA">File A (.env.local, .env.production, etc.)</label>
+      <textarea id="envA" placeholder="DATABASE_URL=postgres://localhost:5432/mydb&#10;API_KEY=sk-abc123def456&#10;DEBUG=true&#10;PORT=3000"></textarea>
+    </div>
+    <div class="editor-panel">
+      <label class="editor-label" for="envB">File B (.env.staging, .env.development, etc.)</label>
+      <textarea id="envB" placeholder="DATABASE_URL=postgres://staging:5432/mydb&#10;SECRET_KEY=super-secret-value&#10;DEBUG=false&#10;PORT=3000"></textarea>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-primary" id="compareBtn" onclick="compare()">Compare</button>
+    <button class="btn btn-secondary" id="clearBtn" onclick="clearAll()">Clear</button>
+    <button class="btn btn-pro" disabled>
+      Save &amp; Share Diff
+      <span class="pro-badge">Pro</span>
+    </button>
+  </div>
+
+  <div class="toggle-row">
+    <span>Mask secrets</span>
+    <label class="toggle-switch">
+      <input type="checkbox" id="maskToggle" checked onchange="rerender()">
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+
+  <div class="results" id="results"></div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<footer>
+  <div>Built by <span class="brand">OpenClaw Ventures</span> · Part of the Developer Writing Suite</div>
+  <div class="suite-links">
+    <a href="https://shiffasultan-collab.github.io/readmecraft/">ReadmeCraft</a>
+    <a href="https://shiffasultan-collab.github.io/commitcraft/">CommitCraft</a>
+    <a href="https://shiffasultan-collab.github.io/prcraft/">PRCraft</a>
+    <a href="https://shiffasultan-collab.github.io/changelogcraft/">ChangelogCraft</a>
+    <a href="https://shiffasultan-collab.github.io/gitdigest-static/">GitDigest</a>
+    <a href="https://shiffasultan-collab.github.io/cronhelper/">CronHelper</a>
+  </div>
+</footer>
+
+<script>
+let diffResult = null;
+
+function parseEnv(text) {
+  const vars = {};
+  text.split('\n').forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx === -1) return;
+    const key = trimmed.substring(0, eqIdx).trim();
+    const val = trimmed.substring(eqIdx + 1).trim();
+    if (key) vars[key] = val;
+  });
+  return vars;
+}
+
+function computeDiff(a, b) {
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  const setA = new Set(keysA);
+  const setB = new Set(keysB);
+
+  const onlyA = keysA.filter(k => !setB.has(k));
+  const onlyB = keysB.filter(k => !setA.has(k));
+  const changed = keysA.filter(k => setB.has(k) && a[k] !== b[k]);
+  const same = keysA.filter(k => setB.has(k) && a[k] === b[k]);
+
+  return { onlyA, onlyB, changed, same, a, b };
+}
+
+function maskValue(val) {
+  if (val.length <= 8) return val;
+  return val.substring(0, 3) + '•'.repeat(Math.min(val.length - 3, 12)) + (val.length > 15 ? '…' : '');
+}
+
+function displayVal(val, masked) {
+  if (!masked) return escapeHtml(val);
+  if (val.length > 8) return '<span class="val-masked">' + escapeHtml(maskValue(val)) + '</span>';
+  return escapeHtml(val);
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function compare() {
+  const textA = document.getElementById('envA').value;
+  const textB = document.getElementById('envB').value;
+
+  if (!textA.trim() && !textB.trim()) {
+    showToast('Paste at least one .env file');
+    return;
+  }
+
+  const a = parseEnv(textA);
+  const b = parseEnv(textB);
+  diffResult = computeDiff(a, b);
+  rerender();
+}
+
+function rerender() {
+  if (!diffResult) return;
+  const { onlyA, onlyB, changed, same, a, b } = diffResult;
+  const masked = document.getElementById('maskToggle').checked;
+  const el = document.getElementById('results');
+
+  let html = '<div class="results-summary">';
+  html += '<span class="summary-chip chip-red">' + onlyA.length + ' only in A</span>';
+  html += '<span class="summary-chip chip-red">' + onlyB.length + ' only in B</span>';
+  html += '<span class="summary-chip chip-yellow">' + changed.length + ' different</span>';
+  html += '<span class="summary-chip chip-green">' + same.length + ' identical</span>';
+  html += '</div>';
+
+  if (onlyA.length === 0 && onlyB.length === 0 && changed.length === 0 && same.length === 0) {
+    html += '<div class="empty-state">No keys found. Check your .env format (KEY=VALUE).</div>';
+  }
+
+  // Only in A
+  if (onlyA.length > 0) {
+    html += '<div class="result-section">';
+    html += '<div class="result-section-header">';
+    html += '<span class="result-section-title"><span class="dot dot-red"></span> Missing from File B (' + onlyA.length + ')</span>';
+    html += '<button class="copy-btn" onclick="copyKeys(\'' + escapeAttr(onlyA.join(',')) + '\', \'a\')">Copy missing keys</button>';
+    html += '</div>';
+    html += '<table class="result-table"><thead><tr><th class="col-key">Key</th><th class="col-val">Value in A</th></tr></thead><tbody>';
+    onlyA.forEach(k => {
+      html += '<tr class="row-red"><td>' + escapeHtml(k) + '</td><td>' + displayVal(a[k], masked) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  // Only in B
+  if (onlyB.length > 0) {
+    html += '<div class="result-section">';
+    html += '<div class="result-section-header">';
+    html += '<span class="result-section-title"><span class="dot dot-red"></span> Missing from File A (' + onlyB.length + ')</span>';
+    html += '<button class="copy-btn" onclick="copyKeys(\'' + escapeAttr(onlyB.join(',')) + '\', \'b\')">Copy missing keys</button>';
+    html += '</div>';
+    html += '<table class="result-table"><thead><tr><th class="col-key">Key</th><th class="col-val">Value in B</th></tr></thead><tbody>';
+    onlyB.forEach(k => {
+      html += '<tr class="row-red"><td>' + escapeHtml(k) + '</td><td>' + displayVal(b[k], masked) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  // Changed
+  if (changed.length > 0) {
+    html += '<div class="result-section">';
+    html += '<div class="result-section-header">';
+    html += '<span class="result-section-title"><span class="dot dot-yellow"></span> Different Values (' + changed.length + ')</span>';
+    html += '</div>';
+    html += '<table class="result-table"><thead><tr><th class="col-key">Key</th><th class="col-val-a">Value in A</th><th class="col-val-b">Value in B</th></tr></thead><tbody>';
+    changed.forEach(k => {
+      html += '<tr class="row-yellow"><td>' + escapeHtml(k) + '</td><td>' + displayVal(a[k], masked) + '</td><td>' + displayVal(b[k], masked) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  // Same
+  if (same.length > 0) {
+    html += '<div class="result-section">';
+    html += '<div class="result-section-header">';
+    html += '<span class="result-section-title"><span class="dot dot-green"></span> Identical (' + same.length + ')</span>';
+    html += '</div>';
+    html += '<table class="result-table"><thead><tr><th class="col-key">Key</th><th class="col-val">Value</th></tr></thead><tbody>';
+    same.forEach(k => {
+      html += '<tr class="row-green"><td>' + escapeHtml(k) + '</td><td>' + displayVal(a[k], masked) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  el.innerHTML = html;
+  el.classList.add('visible');
+}
+
+function escapeAttr(s) {
+  return s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+function copyKeys(keysStr, side) {
+  const keys = keysStr.split(',');
+  const text = keys.join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(keys.length + ' key' + (keys.length > 1 ? 's' : '') + ' copied to clipboard');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast(keys.length + ' key' + (keys.length > 1 ? 's' : '') + ' copied');
+  });
+}
+
+function clearAll() {
+  document.getElementById('envA').value = '';
+  document.getElementById('envB').value = '';
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('results').classList.remove('visible');
+  diffResult = null;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+</script>
+
+</body>
+</html>
